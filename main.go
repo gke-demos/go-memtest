@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"runtime"
 	"runtime/debug"
@@ -8,6 +9,9 @@ import (
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 )
+
+// flags
+var oomFlag bool
 
 // get the memory limit
 func getMemoryLimit() uint64 {
@@ -48,12 +52,22 @@ func checkMemAvailable() (ok bool){
 func main() {
 	// disable GC
 	debug.SetGCPercent(-1)
-	fmt.Printf("Starting go-memtest.  Detected system memory = %v MB\n", bToMb(getMemoryLimit()))
 	
+	// parse flags
+	flag.BoolVar(&oomFlag,"oom",false,"Set oom to true to skip available memory check")
+	flag.Parse()
+	
+	if oomFlag {
+		fmt.Printf("Starting go-memtest with memory check disabled.\n")
+	}else{
+		fmt.Printf("Starting go-memtest.  Detected system memory = %v MB\n", bToMb(getMemoryLimit()))
+	}
+	
+
 	var data []int
 	// loop forever to fill data
 	for i := 0; ; i++ {
-		if checkMemAvailable(){
+		if oomFlag || checkMemAvailable(){
 			data = append(data, i)
 		} else {
 			for !checkMemAvailable(){
